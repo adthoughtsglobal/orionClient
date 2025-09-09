@@ -1,0 +1,338 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    src: url("https://adthoughtsglobal.github.io/assets/MaterialSymbolsRounded.woff2") format('woff2');
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--dull-bg);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--high-bg);
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #ffffffab transparent;
+}
+
+.symb {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+}
+
+html {
+    height: 100%;
+    width: 100%;
+}
+
+body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    background-color: #111113;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    font-size: 1em;
+    font-family: "IBM Plex Sans", sans-serif;
+}
+
+:root {
+    --dull-bg: #111113;
+    --main-bg: #18191b;
+    --high-bg: #33363b;
+    --box-crisp: 1px solid #393b41;
+}
+
+.session {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.topbar {
+    display: flex;
+    background-color: var(--main-bg);
+    align-items: center;
+    gap: .5em;
+    box-shadow: 0 0 10px #00000080;
+    z-index: 1;
+
+    &>* {
+        padding: .5em;
+    }
+
+    &>.divider {
+        width: 1px;
+        height: 20px;
+        background-color: #ffffff5a;
+        padding: 0;
+    }
+
+    &>.server_data {
+        width: 200px;
+    }
+
+    &>.channel_name {
+        flex: 1;
+    }
+}
+
+.profile_card {
+    width: 200px;
+    display: flex;
+    gap: .5em;
+    flex-grow: 0;
+    align-items: center;
+    transition: .2s;
+    background-color: inherit;
+    cursor: pointer;
+
+    &.offline {
+        opacity: .5;
+    }
+
+    &:hover {
+        filter: brightness(140%);
+    }
+
+    &>.pfp {
+        aspect-ratio: 1/1;
+        height: 40px;
+        border-radius: .5em;
+        background-color: #ffffff5a;
+    }
+
+    &>.data {
+        &>.status {
+            font-size: small;
+        }
+
+        &>.name {
+            display: flex;
+            gap: .3em;
+            align-items: center;
+            &>.role-pill {
+                font-size: 1em;
+                color: #ffba00;
+            }
+        }
+    }
+}
+
+.server_ui {
+    display: inherit;
+    flex-direction: row;
+    gap: .5em;
+    flex: 1;
+    height: 0;
+
+    &>#channels,
+    &>.members_list {
+        width: 200px;
+        padding: .5em;
+        background-color: var(--main-bg);
+    }
+
+    &>#channels,
+    &>.members_list,
+    &>.feed>#msgs_list {
+        overflow: hidden;
+        overflow-y: auto;
+    }
+
+    &>.members_list {
+        display: flex;
+        flex-direction: column;
+        gap: .5em;
+
+        &>.sublist_title {
+            font-size: small;
+            margin: .5em 0;
+            opacity: .5;
+            text-transform: uppercase;
+        }
+    }
+
+    &>#channels {
+        &>.single_chnl {
+            display: flex;
+            gap: .3em;
+            align-items: center;
+            padding: .3em;
+            border-radius: .5em;
+            background-color: inherit;
+            cursor: pointer;
+
+            &:hover {
+                filter: brightness(140%);
+            }
+
+            &.active {
+                background: var(--high-bg);
+            }
+
+            &>.symb {
+                font-size: 1.2em;
+                opacity: .7;
+            }
+        }
+    }
+
+    .feed {
+        flex: 1;
+        display: flex;
+        width: 0;
+        flex-direction: column;
+
+        &>div#replyPrompt {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            padding: .3em .5em;
+            background: var(--high-bg);
+            border-radius: .5em .5em 0 0;
+            margin: 0 .5em;
+            align-items: center;
+
+            &>div {
+                white-space: nowrap;
+                display: flex;
+                flex-direction: row;
+                gap: 5px;
+                align-items: center;
+
+                &>#replyun {
+                    background: #0069ff3d;
+                    padding: 1px 5px;
+                    border-radius: .5em;
+                    border: 1px solid #48749e;
+                    color: #b5dbff;
+                }
+            }
+
+            &>.symb {
+                background-color: #ffffff38;
+                border-radius: .3em;
+                font-size: 18px;
+                display: flex;
+                align-items: center;
+            }
+        }
+
+        &>.msg_area {
+            width: 100%;
+            display: flex;
+            background: var(--main-bg);
+            margin-bottom: .5em;
+            border-radius: .5em;
+
+            &>input {
+                width: 100%;
+                background-color: transparent;
+                color: inherit;
+                font: inherit;
+                font-size: inherit;
+                border: 0;
+                padding: .7em 1em;
+                outline: 0;
+            }
+        }
+    }
+}
+
+#msgs_list {
+    flex: 1;
+    padding-bottom: 1em;
+    scroll-padding: 0;
+}
+
+.sing_msg {
+    display: flex;
+    flex-direction: row;
+    gap: .5em;
+    align-items: flex-start;
+    background-color: inherit;
+    padding: 3px 5px;
+    margin-top: .5em;
+
+    &.extra {
+        align-items: center;
+        margin-top: 0;
+    }
+
+    &>.pfp {
+        aspect-ratio: 1/1;
+        width: 40px;
+        border-radius: .5em;
+    }
+
+    &>.time {
+        width: 40px;
+        font-size: 10px;
+        opacity: 0;
+    }
+
+    &:hover {
+        background-color: var(--main-bg);
+
+        &>.time {
+            opacity: .5;
+        }
+    }
+
+    &>.data {
+        width: 0;
+        flex: 1;
+
+        &>.header {
+            display: flex;
+            flex-direction: row;
+            gap: .5em;
+            align-items: center;
+
+            &>.name {
+                color: white;
+            }
+
+            &>.time {
+                opacity: .5;
+                font-size: small;
+            }
+        }
+
+        &>p {
+            margin: 0;
+
+            & a {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                width: 100%;
+                display: block;
+                color: dodgerblue;
+            }
+        }
+    }
+}
