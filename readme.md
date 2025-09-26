@@ -1,0 +1,3 @@
+- OrionClient is a client for RoturTW's originChats realtime chat system.
+- OrionClient focuses on a consistantly designed client with intuitive UI and optimal resource use for originChats.
+- This uses parts of code from other open-source originChat clients.

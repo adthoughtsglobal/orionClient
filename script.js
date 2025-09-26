@@ -171,7 +171,7 @@ function attachWsHandlers() {
                         channel: state.currentChannel,
                     }),
                 );
-                const input = document.getElementById("chatInput");
+                const input = document.getElementById("mainTxtAr");
                 if (input && !input._listenerAttached) {
                     input.addEventListener("keydown", (ev) => {
                         if (ev.key === "Enter" && !ev.shiftKey) {
@@ -453,6 +453,7 @@ function renderReplyExcerpt(message) {
         hintedUser = message.reply_to.user || "";
     }
     if (!replyId) return "";
+    lastmsgun = null;
     const ref =
         message.reply_to_message ||
         state.messages[replyId] ||
@@ -460,16 +461,16 @@ function renderReplyExcerpt(message) {
     if (!ref) {
         if (hintedUser) {
             const color = getUserColor(hintedUser);
-            return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}">Replying to <span class="reply-user" style="color:${color}">@${escapeHTML(hintedUser)}</span></div>`;
+            return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>Replying to <span class="reply-user" style="color:${color}">@${escapeHTML(hintedUser)}</span></div>`;
         }
-        return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}">Replying to unknown message</div>`;
+        return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>Replying to unknown message</div>`;
     }
     if (!state.messages[replyId]) state.messages[replyId] = ref; // ensure cached
     const preview = escapeHTML(stripHtml(ref.content || "").slice(0, 120));
     const colorRaw = getUserColor(ref.user || hintedUser || "");
     const color = colorRaw;
     const userShown = escapeHTML(ref.user || hintedUser || "unknown");
-    return `<div class="reply-excerpt" data-ref="${escapeHTML(replyId)}">
+    return `<div class="reply-excerpt" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>
         <span class="reply-user" style="color:${color}">@${userShown}</span>
         <span class="reply-preview">${preview}</span>
     </div>`;
@@ -557,10 +558,12 @@ function renderMessage(message) {
     if (message["user"] === lastmsgun) {
         html = `
         <div class="sing_msg extra">
+                ${replyBlock}
+                <div class="msg_ctnt extra">
             <div class="time" title="${date.toLocaleString()}">${escapeHTML(date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }))}</div>
             <div class="data">
-                ${replyBlock}
                 <p>${mdText}</p>${message.edited ? '<span class="edited-tag">(edited)</span>' : ""}
+            </div>
             </div>
         </div>
         `.trim();
@@ -568,14 +571,16 @@ function renderMessage(message) {
         const userColor = getUserColor(message["user"]);
         html = `
         <div class="sing_msg" data-id="${escapeHTML(message.id || "")}" data-user="${escapeHTML(message["user"])}">
+                ${replyBlock}
+                <div class="msg_ctnt">
             <img class="pfp" src="https://avatars.rotur.dev/${encodeURIComponent(message["user"])}" alt="${escapeHTML(message["user"])}">
             <div class="data">
                 <div class="header">
                     <div class="name" style="color:${userColor}">${escapeHTML(message["user"])}</div>
                     <div class="time" title="${date.toLocaleString()}">${escapeHTML(date.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }))}</div>
                 </div>
-                ${replyBlock}
                 <p>${mdText}</p>${message.edited ? '<span class="edited-tag">(edited)</span>' : ""}
+            </div>
             </div>
         </div>
         `.trim();
@@ -587,9 +592,12 @@ function renderMessage(message) {
     repllkbtns.classList.add("msg_actions");
     let replybtn = document.createElement("div");
     replybtn.classList.add("button");
+    replybtn.classList.add("symb");
+    replybtn.innerText = "reply"
     repllkbtns.appendChild(replybtn);
-
-    return wrapper.firstElementChild;
+    const messageDiv = wrapper.firstElementChild;
+    messageDiv.appendChild(repllkbtns);
+    return messageDiv;
 }
 
 function listMessages(messageList) {
@@ -627,13 +635,13 @@ function changeChannel(channel) {
             if (el.id === `channel_${channel}`) el.classList.add("active");
             else el.classList.remove("active");
         });
-    const chatInput = document.getElementById("chatInput");
-    if (chatInput) chatInput.placeholder = `Message #${channel}`;
+    const mainTxtAr = document.getElementById("mainTxtAr");
+    if (mainTxtAr) mainTxtAr.placeholder = `Message #${channel}`;
     if (state.unread[channel]) {
         state.unread[channel] = 0;
         updateChannelUnread(channel);
     }
-    updateChatInputPermissions();
+    updatemainTxtArPermissions();
     renderMembers()
 }
 
@@ -701,21 +709,8 @@ function renderMembers() {
     section("Offline", offline, { offline: true });
 }
 
-if (roturToken()) {
-    document.getElementById("authPrompt")?.remove();
-    connectWebSocket();
-} else {
-    const btn = document.getElementById("roturLoginBtn");
-    if (btn)
-        btn.addEventListener("click", () =>
-            RoturAuth.login_prompt({
-                STYLE_URL: location.origin + "/assets/style.css",
-            }),
-        );
-}
-
-function updateChatInputPermissions() {
-    const input = document.getElementById("chatInput");
+function updatemainTxtArPermissions() {
+    const input = document.getElementById("mainTxtAr");
     if (!input) return;
     if (!canSend(state.currentChannel)) {
         input.disabled = true;
@@ -727,4 +722,27 @@ function updateChatInputPermissions() {
     }
 }
 
-updateChatInputPermissions();
+updatemainTxtArPermissions();
+
+function updateUserPanel() {
+    const avatar = document.getElementById("userAvatar");
+    const nameLabel = document.getElementById("usernameLabel");
+    if (state.user) {
+        const uname = extractUsername(state.user);
+        if (avatar)
+            avatar.src = `https://avatars.rotur.dev/${encodeURIComponent(uname)}`;
+        if (nameLabel) nameLabel.textContent = uname;
+    } else {
+        if (nameLabel) nameLabel.textContent = "Not logged in";
+        if (avatar) avatar.src = "assets/unknown.png";
+    }
+}
+
+if (roturToken()) {
+    document.getElementById("authPrompt")?.remove();
+    connectWebSocket();
+} else {
+    RoturAuth.login_prompt({
+        STYLE_URL: location.origin + "/assets/style.css",
+    });
+}
