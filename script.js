@@ -19,6 +19,7 @@ let state = {
     channels: {},
     set currentChannel(value) {
         this._currentChannel = value;
+        lazier.start();
         if (ws?.readyState === 1) {
             ws.send(
                 JSON.stringify({
@@ -171,6 +172,7 @@ function attachWsHandlers() {
                         channel: state.currentChannel,
                     }),
                 );
+                setTimeout(loader.hide, 500);
                 const input = document.getElementById("mainTxtAr");
                 if (input && !input._listenerAttached) {
                     input.addEventListener("keydown", (ev) => {
@@ -184,7 +186,7 @@ function attachWsHandlers() {
                             if (r) {
                                 payload.reply_to = r.id;
                                 state.reply_to[state.currentChannel] = null;
-                                hideReplyBanner();
+                                hidereplyPrompt();
                             }
                             ws.send(JSON.stringify(payload));
                             ev.preventDefault();
@@ -319,7 +321,7 @@ function listChannels(channelList) {
             const unread = state.unread[channel["name"]] || 0;
             const safeName = escapeHTML(channel["name"] || "");
             newChannel.innerHTML = `<div class="symb">
-                        person
+                        forum
                     </div>
                     <div class="name">
                         ${safeName}
@@ -461,16 +463,16 @@ function renderReplyExcerpt(message) {
     if (!ref) {
         if (hintedUser) {
             const color = getUserColor(hintedUser);
-            return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>Replying to <span class="reply-user" style="color:${color}">@${escapeHTML(hintedUser)}</span></div>`;
+            return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="symb rplarrow"></div>Replying to <span class="reply-user" style="color:${color}">@${escapeHTML(hintedUser)}</span></div>`;
         }
-        return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>Replying to unknown message</div>`;
+        return `<div class="reply-excerpt missing" data-ref="${escapeHTML(replyId)}"><div class="rplarrow"></div>Replying to unknown message</div>`;
     }
     if (!state.messages[replyId]) state.messages[replyId] = ref; // ensure cached
     const preview = escapeHTML(stripHtml(ref.content || "").slice(0, 120));
     const colorRaw = getUserColor(ref.user || hintedUser || "");
     const color = colorRaw;
     const userShown = escapeHTML(ref.user || hintedUser || "unknown");
-    return `<div class="reply-excerpt" data-ref="${escapeHTML(replyId)}"><div class="symb">turn_right</div>
+    return `<div class="reply-excerpt" data-ref="${escapeHTML(replyId)}"><div class="rplarrow"></div>
         <span class="reply-user" style="color:${color}">@${userShown}</span>
         <span class="reply-preview">${preview}</span>
     </div>`;
@@ -595,6 +597,11 @@ function renderMessage(message) {
     replybtn.classList.add("symb");
     replybtn.innerText = "reply"
     repllkbtns.appendChild(replybtn);
+    replybtn.onclick = () => {
+        if (state.editing) cancelEdit();
+        state.reply_to[state.currentChannel] = message;
+        if (canSend(state.currentChannel)) showreplyPrompt(message);
+    }
     const messageDiv = wrapper.firstElementChild;
     messageDiv.appendChild(repllkbtns);
     return messageDiv;
@@ -607,6 +614,7 @@ function listMessages(messageList) {
         chatArea.appendChild(renderMessage(message));
     }
     chatArea.scrollTop = chatArea.scrollHeight;
+    lazier.end();
     attemptResolveAllMissingReplies();
 }
 
@@ -628,6 +636,8 @@ function addMessage(messagePacket) {
 
 
 function changeChannel(channel) {
+
+    lastmsgun = null;
     state.currentChannel = channel;
     document
         .querySelectorAll(".single_chnl")
@@ -644,14 +654,31 @@ function changeChannel(channel) {
     updatemainTxtArPermissions();
     renderMembers()
 }
-
 function getUserColor(username) {
-    return state.users?.[username]?.color || "var(--text)";
+    const hex = state.users?.[username]?.color || "#888888";
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+        h = s = 0;
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h *= 60;
+    }
+    return `hsl(${Math.round(h)}, 60%, 75%)`;
 }
 
 
 function renderMembers() {
-    const root = document.getElementsByClassName("members_list")[0];
+    const root = document.getElementsByClassName("members_lists")[0];
     if (!root) return;
     root.innerHTML = "";
 
@@ -715,7 +742,7 @@ function updatemainTxtArPermissions() {
     if (!canSend(state.currentChannel)) {
         input.disabled = true;
         input.placeholder = "Unable to message here";
-        hideReplyBanner();
+        hidereplyPrompt();
     } else {
         input.disabled = false;
         input.placeholder = `Message #${state.currentChannel}`;
@@ -745,4 +772,57 @@ if (roturToken()) {
     RoturAuth.login_prompt({
         STYLE_URL: location.origin + "/assets/style.css",
     });
+}
+
+var loaderElement = document.getElementById("orion")
+var loader = {
+    show: () => {
+        loaderElement.style.display = 'flex';
+        loaderElement.style.opacity = '1';
+    },
+    hide: () => {
+        loaderElement.style.opacity = '0';
+        loaderElement.style.transition = 'opacity 0.5s';
+        setTimeout(() => {
+            loaderElement.style.display = 'none';
+        }, 300);
+    },
+}
+
+var lazier = {
+    start: () => {
+        document.body.classList.add("lazier_loader")
+    },
+    end: () => {
+        document.body.classList.remove("lazier_loader")
+    }
+}
+
+
+function showreplyPrompt(msg) {
+
+    document.querySelectorAll('.replyingto').forEach(el => el.classList.remove('replyingto'))
+    const banner = document.getElementById("replyPrompt");
+    if (!banner) return;
+    if (!canSend(state.currentChannel)) return;
+    if (state.editing) cancelEdit();
+    console.log(msg)
+    document.body.querySelector(`[data-id="${msg.id}"]`).classList.add("replyingto");
+    banner.classList.remove("hidden");
+    const uname =
+        msg.user || (typeof msg === "object" && msg.username) || "unknown";
+    banner.innerHTML = `<div>Replying to <div id="replyun">${escapeHTML(uname)}</div>
+                    </div><div class="clsbtn symb" id="cancelReplyBtn">close</div>`;
+    document.getElementById("cancelReplyBtn").onclick = () => {
+        state.reply_to[state.currentChannel] = null;
+        hidereplyPrompt(msg);
+    };
+}
+function hidereplyPrompt() {
+    const banner = document.getElementById("replyPrompt");
+    if (banner) {
+        banner.classList.add("hidden");
+        banner.innerHTML = "";
+    }
+    document.querySelectorAll('.replyingto').forEach(el => el.classList.remove('replyingto'))
 }
