@@ -326,7 +326,7 @@ function listChannels(channelList) {
                     <div class="name">
                         ${safeName}
                     </div>
-                    ${unread > 0 ? `<span class=\"badge\" data-count=\"${unread}\">${unread}</span>` : ""}
+                    ${unread > 0 ? `<span class=\"badge\"></span>` : ""}
                     `;
             newChannel.setAttribute("active",
                 channel["name"] === state.currentChannel
@@ -426,6 +426,8 @@ function replaceImageLinks(text) {
 
 function formatMessageContent(raw) {
     if (typeof raw !== "string") raw = String(raw ?? "");
+    const emojiRegex = /^\p{Extended_Pictographic}$/u;
+    if (emojiRegex.test(raw)) return `<span style="font-size:2em;line-height:1">${raw}</span>`;
     const urlRegex = /(https?:\/\/[^\s]+)/g;
     let out = "";
     let lastIndex = 0;
@@ -433,12 +435,15 @@ function formatMessageContent(raw) {
     while ((match = urlRegex.exec(raw))) {
         const [url] = match;
         const idx = match.index;
-        if (idx > lastIndex) {
-            out += escapeHTML(raw.slice(lastIndex, idx));
-        }
-        const safeHref = escapeHTML(url);
+        if (idx > lastIndex) out += escapeHTML(raw.slice(lastIndex, idx));
+        const proxiedUrl = `https://proxy.mistium.com/cors?url=${encodeURIComponent(url)}`;
+        const safeHref = escapeHTML(proxiedUrl);
         const safeText = escapeHTML(url);
-        out += `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeText}</a>`;
+        if (/\.(webp|png|jpe?g|gif|svg)$/i.test(url)) {
+            out += `<img src="${safeHref}" alt="${safeText}">`;
+        } else {
+            out += `<a href="${safeHref}" target="_blank" rel="noopener noreferrer">${safeText}</a>`;
+        }
         lastIndex = idx + url.length;
     }
     if (lastIndex < raw.length) out += escapeHTML(raw.slice(lastIndex));
@@ -541,8 +546,6 @@ function updateChannelUnread(channelName) {
         badge.className = "badge";
         link.appendChild(badge);
     }
-    badge.textContent = String(count);
-    badge.setAttribute("data-count", String(count));
 }
 
 var lastmsgun = null;
